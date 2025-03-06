@@ -47,6 +47,9 @@ if mode == "Chatbot":
     for s in st.session_state.suggestions:
         if st.sidebar.button(s):
             selected_query = s
+            with st.spinner("Đang tạo câu trả lời..."):
+                answer = ask_groq(selected_query)
+            st.session_state.chat_history.append({"question": selected_query, "answer": answer})
 
     # Hiển thị lịch sử trò chuyện trong hộp cuộn
     st.subheader("📜 Lịch sử trò chuyện")
