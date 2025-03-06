@@ -1,5 +1,8 @@
 import streamlit as st
 from groq import Groq
+import pyttsx3
+from gtts import gTTS
+import os
 
 # Khởi tạo Groq API
 client = Groq(api_key="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")
@@ -13,9 +16,9 @@ def ask_groq(query):
     return response.choices[0].message.content
 
 def text_to_speech(text):
-    engine = pyttsx3.init()
-    engine.say(text)
-    engine.runAndWait()
+    tts = gTTS(text, lang="en")
+    tts.save("output.mp3")
+    st.audio("output.mp3", format="audio/mp3")
 
 # UI Streamlit
 st.set_page_config(page_title="Chatbot Học Tiếng Anh", layout="wide")
