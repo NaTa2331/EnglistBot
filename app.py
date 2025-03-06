@@ -68,13 +68,40 @@ if mode == "Chatbot":
         st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
         st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
 
-    # Nhập câu hỏi và gửi khi nhấn Enter
+    def update_suggestions(last_question):
+    """Cập nhật gợi ý dựa trên câu hỏi gần nhất"""
+    if "phát âm" in last_question.lower():
+        st.session_state.suggestions = [
+            "Làm sao để phát âm chuẩn hơn?",
+            "Những lỗi phát âm phổ biến là gì?",
+            "Cách cải thiện ngữ điệu khi nói?",
+        ]
+    elif "ngữ pháp" in last_question.lower():
+        st.session_state.suggestions = [
+            "Các lỗi ngữ pháp phổ biến?",
+            "So sánh thì hiện tại đơn và hiện tại tiếp diễn?",
+            "Làm sao để nhớ cấu trúc câu dễ dàng hơn?",
+        ]
+    elif "từ vựng" in last_question.lower():
+        st.session_state.suggestions = [
+            "Cách học từ vựng hiệu quả?",
+            "Làm sao để nhớ từ vựng lâu?",
+            "Có mẹo nào để học từ vựng nhanh không?",
+        ]
+    else:
+        st.session_state.suggestions = [
+            "Làm thế nào để học ngôn ngữ hiệu quả?",
+            "Có phương pháp nào giúp nhớ nhanh hơn không?",
+            "Cách giao tiếp tự nhiên hơn?",
+        ]
+
     def on_submit():
         query = st.session_state.query_input.strip()
         if query:
             with st.spinner("Đang tạo câu trả lời..."):
                 answer = ask_groq(query)
             st.session_state.chat_history.append({"question": query, "answer": answer})
+            update_suggestions(query)  # Cập nhật gợi ý theo câu hỏi mới nhất
             st.session_state.query_input = ""
 
     st.text_input("Nhập câu hỏi của bạn:", key="query_input", on_change=on_submit)
