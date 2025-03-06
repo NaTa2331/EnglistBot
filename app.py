@@ -71,16 +71,14 @@ if mode == "Chatbot":
             st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
             st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
 
-    # Nhập câu hỏi và nút gửi
     query = st.text_input("Nhập câu hỏi của bạn:", key="query_input")
     col1, col2 = st.columns([4, 1])
-    
     with col1:
-        st.text_input("", key="query_input", on_change=lambda: on_submit() if st.session_state.query_input.strip() else None)
-    
+        st.write("")  # Thêm khoảng trống để căn chỉnh giao diện
     with col2:
         if st.button("Gửi"):
             on_submit()
+
 
     def on_submit():
         query = st.session_state.query_input.strip()
