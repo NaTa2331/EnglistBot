@@ -7,7 +7,7 @@ import os
 client = Groq(api_key="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")
 
 # Lựa chọn ngôn ngữ
-language = st.sidebar.radio("Chọn ngôn ngữ giảng dạy:", ["Tiếng Anh", "Tiếng Trung"])
+language = st.radio("Chọn ngôn ngữ giảng dạy:", ["Tiếng Anh", "Tiếng Trung"])
 
 # Xác định prompt theo ngôn ngữ
 if language == "Tiếng Anh":
