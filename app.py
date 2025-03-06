@@ -37,13 +37,7 @@ for s in st.session_state.suggestions:
     if st.sidebar.button(s):
         selected_query = s
 
-# Hiển thị lịch sử trò chuyện
-st.subheader("📜 Lịch sử trò chuyện")
-for chat in st.session_state.chat_history:
-    st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
-    st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
-
-# Nhập câu hỏi cố định bên dưới
+# Nhập câu hỏi
 query = st.text_input("Nhập câu hỏi của bạn:", value=selected_query if selected_query else "")
 if query:
     with st.spinner("Đang tạo câu trả lời..."):
@@ -74,5 +68,10 @@ if query:
             "Làm sao để áp dụng kiến thức này vào giao tiếp hàng ngày?"
         ]
 
+# Hiển thị lịch sử trò chuyện
+st.subheader("📜 Lịch sử trò chuyện")
+for chat in st.session_state.chat_history:
+    st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
+    st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
 
 
