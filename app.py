@@ -14,10 +14,10 @@ language = st.sidebar.radio("Chọn ngôn ngữ giảng dạy:", ["Tiếng Anh",
 
 # Xác định prompt theo ngôn ngữ
 if language == "Tiếng Anh":
-    system_prompt = "Bạn là giáo viên dạy tiếng Anh cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa tiếng Việt. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp."
+    system_prompt = "Bạn là giáo viên dạy tiếng Anh cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa, giải thích bằng tiếng Việt. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp."
     tts_lang = "en"
 elif language == "Tiếng Trung":
-    system_prompt = "Bạn là giáo viên dạy tiếng Trung cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa tiếng Việt. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp."
+    system_prompt = "Bạn là giáo viên dạy tiếng Trung cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa, giải thích bằng tiếng Việt. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp."
     tts_lang = "zh"
 
 def ask_groq(query):
