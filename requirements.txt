@@ -1,5 +1,3 @@
 streamlit
 groq
-pyttsx3
-gTTS
-os
+gtts
