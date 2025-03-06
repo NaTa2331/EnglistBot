@@ -3,18 +3,20 @@ from groq import Groq
 from gtts import gTTS
 import os
 
+# Cấu hình trang phải đặt ở đầu
+st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
 # Khởi tạo Groq API
 client = Groq(api_key="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")
 
 # Lựa chọn ngôn ngữ
-language = st.radio("Chọn ngôn ngữ giảng dạy:", ["Tiếng Anh", "Tiếng Trung"])
+language = st.sidebar.radio("Chọn ngôn ngữ giảng dạy:", ["Tiếng Anh", "Tiếng Trung"])
 
 # Xác định prompt theo ngôn ngữ
 if language == "Tiếng Anh":
-    system_prompt = "Bạn là giáo viên dạy tiếng Anh cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa và trả lời bằng tiếng Việt. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp."
+    system_prompt = "Bạn là giáo viên dạy tiếng Anh cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa tiếng Việt khi cần thiết. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp."
     tts_lang = "en"
 elif language == "Tiếng Trung":
-    system_prompt = "Bạn là giáo viên dạy tiếng Trung cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa và trả lời bằng tiếng Việt. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp."
+    system_prompt = "Bạn là giáo viên dạy tiếng Trung cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa tiếng Việt khi cần thiết. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp."
     tts_lang = "zh"
 
 def ask_groq(query):
@@ -31,7 +33,6 @@ def text_to_speech(text):
     st.audio("output.mp3", format="audio/mp3")
 
 # UI Streamlit
-st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
 st.title("🗣️ Chatbot Dạy Ngôn Ngữ")
 st.write("Hỏi về từ vựng, ngữ pháp, cách phát âm hoặc giao tiếp thực tế!")
 
@@ -62,7 +63,7 @@ if mode == "Chatbot":
                 answer = ask_groq(selected_query)
             st.session_state.chat_history.append({"question": selected_query, "answer": answer})
 
-    # Hiển thị lịch sử trò chuyện trong hộp cuộn
+    # Hiển thị lịch sử trò chuyện
     st.subheader("📜 Lịch sử trò chuyện")
     chat_container = st.container()
     with chat_container:
@@ -70,11 +71,13 @@ if mode == "Chatbot":
             st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
             st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
 
-    # Nhập câu hỏi cố định bên dưới
+    # Nhập câu hỏi và nút gửi
     query = st.text_input("Nhập câu hỏi của bạn:", key="query_input")
     col1, col2 = st.columns([4, 1])
+    
     with col1:
         st.text_input("", key="query_input", on_change=lambda: on_submit() if st.session_state.query_input.strip() else None)
+    
     with col2:
         if st.button("Gửi"):
             on_submit()
