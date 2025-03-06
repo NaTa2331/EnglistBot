@@ -1,8 +1,7 @@
 import streamlit as st
 from groq import Groq
 import pyttsx3
-from gtts import gTTS
-import os
+
 
 # Khởi tạo Groq API
 client = Groq(api_key="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")
@@ -14,11 +13,10 @@ def ask_groq(query):
     ]
     response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
     return response.choices[0].message.content
-
 def text_to_speech(text):
-    tts = gTTS(text, lang="en")
-    tts.save("output.mp3")
-    st.audio("output.mp3", format="audio/mp3")
+    engine = pyttsx3.init()
+    engine.say(text)
+    engine.runAndWait()
 
 # UI Streamlit
 st.set_page_config(page_title="Chatbot Học Tiếng Anh", layout="wide")
@@ -71,6 +69,14 @@ if mode == "Chatbot":
 elif mode == "Học phát âm":
     st.subheader("🔊 Học phát âm")
     word = st.text_input("Nhập từ cần phát âm:")
+    
+    if st.button("📖 Dịch nghĩa"):
+        if word:
+            meaning = ask_groq(f"Dịch nghĩa từ '{word}' sang tiếng Việt")
+            st.write(f"📖 Nghĩa của '{word}': {meaning}")
+        else:
+            st.warning("Vui lòng nhập từ cần dịch!")
+    
     if st.button("🔊 Nghe phát âm"):
         if word:
             text_to_speech(word)
