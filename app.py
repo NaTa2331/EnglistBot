@@ -9,7 +9,7 @@ def ask_groq(query):
         {"role": "system", "content": "Bạn là giáo viên dạy tiếng Anh cho người Việt. Hãy trả lời dễ hiểu, giải thích rõ ràng, dùng ví dụ cụ thể, dịch nghĩa tiếng Việt khi cần thiết. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp. Trả lời bằng tiếng Việt."},
         {"role": "user", "content": query}
     ]
-    response = client.chat.completions.create(messages=messages, model="mixtral-8x7b-32768")
+    response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
     return response.choices[0].message.content
 
 # UI Streamlit
@@ -37,7 +37,13 @@ for s in st.session_state.suggestions:
     if st.sidebar.button(s):
         selected_query = s
 
-# Nhập câu hỏi
+# Hiển thị lịch sử trò chuyện
+st.subheader("📜 Lịch sử trò chuyện")
+for chat in st.session_state.chat_history:
+    st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
+    st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
+
+# Nhập câu hỏi cố định bên dưới
 query = st.text_input("Nhập câu hỏi của bạn:", value=selected_query if selected_query else "")
 if query:
     with st.spinner("Đang tạo câu trả lời..."):
@@ -68,10 +74,5 @@ if query:
             "Làm sao để áp dụng kiến thức này vào giao tiếp hàng ngày?"
         ]
 
-# Hiển thị lịch sử trò chuyện
-st.subheader("📜 Lịch sử trò chuyện")
-for chat in st.session_state.chat_history:
-    st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
-    st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
 
 
