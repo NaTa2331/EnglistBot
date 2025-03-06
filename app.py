@@ -17,9 +17,31 @@ st.set_page_config(page_title="Chatbot Học Tiếng Anh", layout="wide")
 st.title("🗣️ Chatbot Dạy Tiếng Anh")
 st.write("Hỏi về từ vựng, ngữ pháp, cách phát âm hoặc giao tiếp thực tế!")
 
+# Lịch sử trò chuyện
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+# Gợi ý câu hỏi
+suggestions = [
+    "Làm thế nào để học từ vựng hiệu quả?",
+    "Cách phát âm chuẩn từ 'schedule'?",
+    "Sự khác biệt giữa 'say', 'tell', 'speak' và 'talk'?",
+    "Cấu trúc thì hiện tại hoàn thành?",
+    "Mẹo nhớ cách dùng giới từ trong tiếng Anh?"
+]
+st.sidebar.subheader("🎯 Gợi ý câu hỏi")
+for s in suggestions:
+    if st.sidebar.button(s):
+        query = s
+
 query = st.text_input("Nhập câu hỏi của bạn:")
 if query:
     with st.spinner("Đang tạo câu trả lời..."):
         answer = ask_groq(query)
-    st.write("**🧑‍🏫 Trợ lý AI:**")
-    st.write(answer)
+    st.session_state.chat_history.append({"question": query, "answer": answer})
+
+# Hiển thị lịch sử trò chuyện
+st.subheader("📜 Lịch sử trò chuyện")
+for chat in st.session_state.chat_history:
+    st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
+    st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
