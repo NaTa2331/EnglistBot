@@ -33,6 +33,7 @@ def text_to_speech(text):
     st.audio("output.mp3", format="audio/mp3")
 
 # UI Streamlit
+st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
 st.title("🗣️ Chatbot Dạy Ngôn Ngữ")
 st.write("Hỏi về từ vựng, ngữ pháp, cách phát âm hoặc giao tiếp thực tế!")
 
@@ -63,7 +64,7 @@ if mode == "Chatbot":
                 answer = ask_groq(selected_query)
             st.session_state.chat_history.append({"question": selected_query, "answer": answer})
 
-    # Hiển thị lịch sử trò chuyện
+    # Hiển thị lịch sử trò chuyện trong hộp cuộn
     st.subheader("📜 Lịch sử trò chuyện")
     chat_container = st.container()
     with chat_container:
@@ -71,14 +72,8 @@ if mode == "Chatbot":
             st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
             st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
 
-    query = st.text_input("Nhập câu hỏi của bạn:", key="query_input")
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.write("")  # Thêm khoảng trống để căn chỉnh giao diện
-    with col2:
-        if st.button("Gửi"):
-            on_submit()
-
+    # Nhập câu hỏi và gửi khi nhấn Enter
+    query = st.text_input("Nhập câu hỏi của bạn:", key="query_input", on_change=lambda: on_submit() if st.session_state.query_input.strip() else None)
 
     def on_submit():
         query = st.session_state.query_input.strip()
