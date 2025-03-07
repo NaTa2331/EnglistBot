@@ -5,6 +5,7 @@ from groq import Groq
 from gtts import gTTS
 import numpy as np
 import os
+import queue
 
 # Đặt cấu hình trang (phải là lệnh đầu tiên)
 st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
