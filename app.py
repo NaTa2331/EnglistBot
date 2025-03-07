@@ -3,9 +3,10 @@ from streamlit_webrtc import webrtc_streamer, WebRtcMode
 import speech_recognition as sr
 import numpy as np
 import queue
+import tempfile
+import os
 from groq import Groq
 from gtts import gTTS
-import os
 
 # Đặt cấu hình trang (phải là lệnh đầu tiên)
 st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
@@ -24,6 +25,17 @@ elif language == "Tiếng Trung":
     system_prompt = "Bạn là giáo viên dạy tiếng Trung cho người Việt Nam. Hãy trả lời dễ hiểu, giải thích rõ ràng, đầy đủ (Cấu trúc, công thức), dùng ví dụ cụ thể, dịch nghĩa bằng tiếng Việt. Nếu có thể, hãy cung cấp mẹo ghi nhớ hoặc cách sử dụng thực tế trong giao tiếp bằng tiếng Việt. Lưu ý tất cả phải được trả lời bằng tiếng Trung"
     tts_lang = "zh"
 
+def recognize_speech(audio_file):
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(audio_file) as source:
+        audio_data = recognizer.record(source)
+        try:
+            return recognizer.recognize_google(audio_data, language="vi-VN")
+        except sr.UnknownValueError:
+            return "Không nhận diện được giọng nói!"
+        except sr.RequestError:
+            return "Lỗi kết nối với API nhận diện giọng nói!"
+
 # Hàm gọi Groq API
 def ask_groq(query):
     messages = [
@@ -35,9 +47,11 @@ def ask_groq(query):
 
 # Hàm chuyển văn bản thành giọng nói
 def text_to_speech(text):
-    tts = gTTS(text, lang=tts_lang)
-    tts.save("response.mp3")
-    st.audio("response.mp3", format="audio/mp3")
+    tts = gTTS(text, lang="vi")
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
+        tts.save(tmpfile.name)
+        st.audio(tmpfile.name, format="audio/mp3")
+        os.remove(tmpfile.name)
 
 # ===================== UI STREAMLIT =====================
 st.title("🎙️ Chatbot Học Ngôn Ngữ")
@@ -66,20 +80,7 @@ if mode == "Trò chuyện văn bản":
 
 # ===================== CHẾ ĐỘ TRÒ CHUYỆN GIỌNG NÓI =====================
 elif mode == "Trò chuyện giọng nói":    
-    recognizer = sr.Recognizer()
-    audio_queue = queue.Queue()
-
-    def recognize_speech_from_stream(audio_data):
-        """Chuyển đổi giọng nói từ stream thành văn bản theo thời gian thực."""
-        try:
-            return recognizer.recognize_google(audio_data, language="vi-VN")
-        except sr.UnknownValueError:
-            return "..."
-        except sr.RequestError:
-            return "Lỗi nhận diện giọng nói!"
-
-    # Chế độ trò chuyện giọng nói
-    st.subheader("🎙️ Trò chuyện bằng giọng nói (Thời gian thực)")
+    st.subheader("🎙️ Trò chuyện bằng giọng nói")
 
     webrtc_ctx = webrtc_streamer(
         key="speech-recognition",
@@ -87,41 +88,33 @@ elif mode == "Trò chuyện giọng nói":
         audio_receiver_size=1024,
         media_stream_constraints={"video": False, "audio": True},
     )
-
     if webrtc_ctx.audio_receiver:
         st.write("🎤 **Đang lắng nghe...**")
         transcript_placeholder = st.empty()
-
+        
         try:
-            while True:
-                audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-                if not audio_frames:
-                    continue
+            audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=3)
+            if audio_frames:
+                audio_data = np.concatenate([frame.to_ndarray() for frame in audio_frames], axis=0)
 
-                # Ghép nối các frame thành dạng NumPy array
-                audio = np.concatenate([frame.to_ndarray() for frame in audio_frames], axis=0)
+                # Lưu file âm thanh tạm thời
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmpfile:
+                    tmpfile.write(audio_data.tobytes())
+                    tmp_audio_path = tmpfile.name
 
-                # Chuyển sang dạng âm thanh cho SpeechRecognition
-                audio_data = sr.AudioData(audio.tobytes(), sample_rate=16000, sample_width=2)
-                recognized_text = recognize_speech_from_stream(audio_data)
+                # Nhận diện giọng nói
+                user_text = recognize_speech(tmp_audio_path)
+                transcript_placeholder.write(f"🗣️ **Bạn:** {user_text}")
 
-                # Hiển thị văn bản đang nói theo thời gian thực
-                transcript_placeholder.write(f"🗣️ **Bạn:** {recognized_text}")
-
-                # Khi người dùng dừng nói, gửi nội dung đến chatbot
-                if recognized_text and recognized_text != "...":
+                # Gửi câu hỏi đến AI nếu có nội dung hợp lệ
+                if user_text and user_text != "Không nhận diện được giọng nói!":
                     with st.spinner("💭 Đang suy nghĩ..."):
-                        answer = client.chat.completions.create(
-                            messages=[{"role": "user", "content": recognized_text}],
-                            model="llama3-70b-8192"
-                        ).choices[0].message.content
+                        answer = ask_groq(user_text)
+                        st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
+                        text_to_speech(answer)
 
-                    st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
-
-                    # Đọc to câu trả lời
-                    tts = gTTS(answer, lang="vi")
-                    tts.save("response.mp3")
-                    st.audio("response.mp3", format="audio/mp3")
+                # Xóa file âm thanh tạm thời
+                os.remove(tmp_audio_path)
 
         except Exception as e:
             st.error(f"Lỗi ghi âm: {e}")
