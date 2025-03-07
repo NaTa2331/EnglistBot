@@ -65,9 +65,7 @@ if mode == "Trò chuyện văn bản":
             st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
 
 # ===================== CHẾ ĐỘ TRÒ CHUYỆN GIỌNG NÓI =====================
-elif mode == "Trò chuyện giọng nói":
-    st.subheader("🎙️ Trò chuyện bằng giọng nói")
-    
+elif mode == "Trò chuyện giọng nói":    
     recognizer = sr.Recognizer()
     audio_queue = queue.Queue()
 
