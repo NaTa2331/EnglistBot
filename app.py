@@ -5,8 +5,6 @@ from groq import Groq
 from gtts import gTTS
 import numpy as np
 import os
-import av
-import tempfile
 
 # Đặt cấu hình trang (phải là lệnh đầu tiên)
 st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
@@ -33,12 +31,10 @@ def ask_groq(query):
     response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
     return response.choices[0].message.content
 
-# Chuyển văn bản thành giọng nói
 def text_to_speech(text):
     tts = gTTS(text, lang=tts_lang)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmpfile:
-        tts.save(tmpfile.name)
-        st.audio(tmpfile.name, format="audio/mp3")
+    tts.save("output.mp3")
+    st.audio("output.mp3", format="audio/mp3")
 
 # UI Streamlit
 st.title("🗣️ Chatbot Dạy Ngôn Ngữ")
@@ -52,50 +48,22 @@ if mode == "Chatbot":
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # WebRTC Streaming - Ghi âm giọng nói
-    st.subheader("🎙️ Nhận diện giọng nói")
-    webrtc_ctx = webrtc_streamer(
-        key="speech-recognition",
-        mode=WebRtcMode.SENDRECV,
-        audio_receiver_size=1024,
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-        media_stream_constraints={"video": False, "audio": True},
-    )
+    # Gợi ý câu hỏi động
+    if "suggestions" not in st.session_state:
+        st.session_state.suggestions = [
+            "Làm thế nào để học từ vựng hiệu quả?",
+            "Cách phát âm chuẩn từ 'schedule'?",
+            "Sự khác biệt giữa 'say', 'tell', 'speak' và 'talk'?",
+            "Cấu trúc thì hiện tại hoàn thành?",
+            "Mẹo nhớ cách dùng giới từ trong ngôn ngữ này?"
+        ]
 
-    if webrtc_ctx.audio_receiver:
-        st.write("🎤 Đang lắng nghe... Hãy nói gì đó!")
-        audio_frames = []
-        
-        # Lấy dữ liệu từ micro
-        while True:
-            try:
-                audio_frame = webrtc_ctx.audio_receiver.get_frame(timeout=1)
-                audio_frames.append(audio_frame.to_ndarray())
-            except queue.Empty:
-                break
-        
-        if audio_frames:
-            audio_data = np.concatenate(audio_frames, axis=0)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_wav:
-                sr.AudioData(audio_data.tobytes(), sample_rate=16000, sample_width=2).write_wav(tmp_wav.name)
-
-            # Nhận diện giọng nói
-            recognizer = sr.Recognizer()
-            with sr.AudioFile(tmp_wav.name) as source:
-                audio = recognizer.record(source)
-            try:
-                text = recognizer.recognize_google(audio, language="vi-VN")
-                st.success(f"Bạn đã nói: {text}")
-
-                with st.spinner("Đang tạo câu trả lời..."):
-                    answer = ask_groq(text)
-                st.session_state.chat_history.append({"question": text, "answer": answer})
-                st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
-
-            except sr.UnknownValueError:
-                st.warning("Không nhận diện được giọng nói, vui lòng thử lại!")
-            except sr.RequestError:
-                st.error("Lỗi kết nối với dịch vụ nhận diện giọng nói!")
+    st.sidebar.subheader("🎯 Gợi ý câu hỏi")
+    for s in st.session_state.suggestions:
+        if st.sidebar.button(s):
+            with st.spinner("Đang tạo câu trả lời..."):
+                answer = ask_groq(s)
+            st.session_state.chat_history.append({"question": s, "answer": answer})
 
     # Hiển thị lịch sử trò chuyện
     st.subheader("📜 Lịch sử trò chuyện")
@@ -103,29 +71,54 @@ if mode == "Chatbot":
         st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
         st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
 
-    query = st.text_input("Nhập câu hỏi của bạn:")
-    if st.button("Gửi"):
+    def update_suggestions(last_question):
+        """Cập nhật gợi ý dựa trên câu hỏi gần nhất"""
+        if "phát âm" in last_question.lower():
+            st.session_state.suggestions = [
+                "Làm sao để phát âm chuẩn hơn?",
+                "Những lỗi phát âm phổ biến là gì?",
+                "Cách cải thiện ngữ điệu khi nói?",
+        ]
+        elif "ngữ pháp" in last_question.lower():
+            st.session_state.suggestions = [
+                "Các lỗi ngữ pháp phổ biến?",
+                "So sánh thì hiện tại đơn và hiện tại tiếp diễn?",
+                "Làm sao để nhớ cấu trúc câu dễ dàng hơn?",
+            ]
+        elif "từ vựng" in last_question.lower():
+            st.session_state.suggestions = [
+                "Cách học từ vựng hiệu quả?",
+                "Làm sao để nhớ từ vựng lâu?",
+                "Có mẹo nào để học từ vựng nhanh không?",
+            ]
+        else:
+            st.session_state.suggestions = [
+                "Làm thế nào để học ngôn ngữ hiệu quả?",
+                "Có phương pháp nào giúp nhớ nhanh hơn không?",
+                "Cách giao tiếp tự nhiên hơn?",
+        ]
+    def on_submit():
+        query = st.session_state.query_input.strip()
         if query:
             with st.spinner("Đang tạo câu trả lời..."):
                 answer = ask_groq(query)
             st.session_state.chat_history.append({"question": query, "answer": answer})
-            st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
+            update_suggestions(query)  # Cập nhật gợi ý theo câu hỏi mới nhất
+            st.session_state.query_input = ""
 
-    if st.button("🗑️ Xóa lịch sử"):
-        st.session_state.chat_history = []
-        st.experimental_rerun()
+    st.text_input("Nhập câu hỏi của bạn:", key="query_input", on_change=on_submit)
 
 elif mode == "Học phát âm":
     st.subheader("🔊 Học phát âm")
     word = st.text_input("Nhập từ cần phát âm:")
-
+    
     if st.button("📖 Dịch nghĩa"):
         if word:
             meaning = ask_groq(f"Dịch nghĩa từ '{word}' sang tiếng Việt")
             st.write(f"📖 Nghĩa của '{word}': {meaning}")
         else:
             st.warning("Vui lòng nhập từ cần dịch!")
-
+    
     if st.button("🔊 Nghe phát âm"):
         if word:
             text_to_speech(word)
