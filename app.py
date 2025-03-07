@@ -37,17 +37,21 @@ def text_to_speech(text):
 def recognize_speech():
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
-        st.write("🎤 Đang nghe... Hãy nói vào micro!")
+        st.write("🎤 Đang lắng nghe... Hãy nói điều gì đó!")
+        recognizer.adjust_for_ambient_noise(source)  # Điều chỉnh tiếng ồn
+        audio = recognizer.listen(source)
+        st.write("✅ Ghi âm xong! Đang xử lý...")
+
         try:
-            audio = recognizer.listen(source, timeout=5)
-            text = recognizer.recognize_google(audio, language="vi-VN")
-            st.write(f"🗣️ Bạn nói: {text}")
+            text = recognizer.recognize_google(audio, language="vi-VN")  # Nhận diện giọng nói tiếng Việt
+            st.write(f"📝 Bạn nói: {text}")
             return text
         except sr.UnknownValueError:
-            st.warning("🤷 Không nhận diện được giọng nói, vui lòng thử lại!")
+            st.error("❌ Không nhận diện được giọng nói, vui lòng thử lại!")
+            return None
         except sr.RequestError:
-            st.error("⚠️ Lỗi kết nối, vui lòng kiểm tra internet!")
-        return ""
+            st.error("❌ Lỗi kết nối đến dịch vụ nhận diện giọng nói!")
+            return None
 
 # UI Streamlit
 st.title("🗣️ Chatbot Dạy Ngôn Ngữ")
@@ -140,7 +144,6 @@ elif mode == "Học phát âm":
 
 elif mode == "Trò chuyện":
     st.subheader("🗣️ Trò chuyện bằng giọng nói")
-    
     if st.button("🎙️ Bắt đầu ghi âm"):
         spoken_text = recognize_speech()
         if spoken_text:
