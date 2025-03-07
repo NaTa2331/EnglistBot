@@ -4,3 +4,4 @@ gtts
 pyttsx3
 SpeechRecognition
 pydub
+PyAudio
