@@ -32,35 +32,18 @@ def ask_groq(query):
     response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
     return response.choices[0].message.content
 
-def ask_groq(query):
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": query}
-    ]
-    response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
-    return response.choices[0].message.content
-
-def text_to_speech(text):
+ddef text_to_speech(text):
     tts = gTTS(text, lang=tts_lang)
     tts.save("output.mp3")
     st.audio("output.mp3", format="audio/mp3")
 
-# Nhận diện giọng nói
-def recognize_speech():
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        st.write("🎤 Đang lắng nghe... Hãy nói gì đó!")
-        audio = recognizer.listen(source)
-    try:
-        text = recognizer.recognize_google(audio, language="vi-VN")
-        st.success(f"Bạn đã nói: {text}")
-        return text
-    except sr.UnknownValueError:
-        st.warning("Không nhận diện được giọng nói, vui lòng thử lại!")
-        return ""
-    except sr.RequestError:
-        st.error("Lỗi kết nối với dịch vụ nhận diện giọng nói!")
-        return ""
+# Sử dụng streamlit_webrtc để nhận giọng nói
+st.session_state.audio_buffer = []
+
+def audio_callback(frame: av.AudioFrame) -> av.AudioFrame:
+    audio = frame.to_ndarray()
+    st.session_state.audio_buffer.append(audio)
+    return frame
 
 # UI Streamlit
 st.title("🗣️ Chatbot Dạy Ngôn Ngữ")
@@ -74,14 +57,32 @@ if mode == "Chatbot":
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # Nhập giọng nói
-    if st.button("🎙️ Nhập bằng giọng nói"):
-        query = recognize_speech()
-        if query:
+    # Nhận giọng nói bằng WebRTC
+    webrtc_ctx = webrtc_streamer(
+        key="speech-recognition",
+        mode=WebRtcMode.SENDRECV,
+        audio_receiver_size=1024,
+        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+        media_stream_constraints={"video": False, "audio": True},
+    )
+
+    if webrtc_ctx.audio_receiver:
+        st.write("🎤 Đang lắng nghe... Hãy nói gì đó!")
+        audio_data = np.concatenate(st.session_state.audio_buffer, axis=0)
+        try:
+            from speech_recognition import Recognizer, AudioData
+            recognizer = Recognizer()
+            audio = AudioData(audio_data.tobytes(), sample_rate=16000, sample_width=2)
+            text = recognizer.recognize_google(audio, language="vi-VN")
+            st.success(f"Bạn đã nói: {text}")
+
             with st.spinner("Đang tạo câu trả lời..."):
-                answer = ask_groq(query)
-            st.session_state.chat_history.append({"question": query, "answer": answer})
+                answer = ask_groq(text)
+            st.session_state.chat_history.append({"question": text, "answer": answer})
             st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
+
+        except Exception as e:
+            st.warning(f"Lỗi nhận diện giọng nói: {str(e)}")
 
     # Hiển thị lịch sử trò chuyện
     st.subheader("📜 Lịch sử trò chuyện")
