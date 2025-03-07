@@ -1,6 +1,8 @@
 import streamlit as st
 from groq import Groq
 from gtts import gTTS
+import speech_recognition as sr
+
 
 # Đặt cấu hình trang (phải là lệnh đầu tiên)
 st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
@@ -106,6 +108,21 @@ if mode == "Chatbot":
 
 elif mode == "Học phát âm":
     st.subheader("🔊 Học phát âm")
+    
+    # Add a button for voice input
+    if st.button("🎤 Nhập từ bằng giọng nói"):
+        recognizer = sr.Recognizer()
+        with sr.Microphone() as source:
+            st.write("🔊 Nghe... Vui lòng nói từ cần phát âm.")
+            audio = recognizer.listen(source)
+            try:
+                word = recognizer.recognize_google(audio, language='vi-VN')  # Adjust language as needed
+                st.success(f"Bạn đã nhập: {word}")
+            except sr.UnknownValueError:
+                st.error("Không thể nhận diện giọng nói.")
+            except sr.RequestError:
+                st.error("Không thể kết nối đến dịch vụ nhận diện giọng nói.")
+    
     word = st.text_input("Nhập từ cần phát âm:")
     
     if st.button("📖 Dịch nghĩa"):

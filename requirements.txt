@@ -2,3 +2,4 @@ streamlit
 groq
 gtts
 numpy
+SpeechRecognition
