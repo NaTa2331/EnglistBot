@@ -1,7 +1,7 @@
 streamlit
+streamlit-webrtc
 groq
 gtts
 speechrecognition
-pyaudio
 pydub
-ffmpeg-python
+numpy
