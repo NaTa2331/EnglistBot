@@ -2,6 +2,7 @@ import streamlit as st
 from groq import Groq
 from gtts import gTTS
 import os
+import speech_recognition as sr
 
 # Đặt cấu hình trang (phải là lệnh đầu tiên)
 st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
@@ -33,12 +34,27 @@ def text_to_speech(text):
     tts.save("output.mp3")
     st.audio("output.mp3", format="audio/mp3")
 
+def recognize_speech():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        st.write("🎤 Đang nghe... Hãy nói vào micro!")
+        try:
+            audio = recognizer.listen(source, timeout=5)
+            text = recognizer.recognize_google(audio, language="vi-VN")
+            st.write(f"🗣️ Bạn nói: {text}")
+            return text
+        except sr.UnknownValueError:
+            st.warning("🤷 Không nhận diện được giọng nói, vui lòng thử lại!")
+        except sr.RequestError:
+            st.error("⚠️ Lỗi kết nối, vui lòng kiểm tra internet!")
+        return ""
+
 # UI Streamlit
 st.title("🗣️ Chatbot Dạy Ngôn Ngữ")
 st.write("Hỏi về từ vựng, ngữ pháp, cách phát âm hoặc giao tiếp thực tế!")
 
 # Tạo sidebar để chuyển đổi giữa các chế độ
-mode = st.sidebar.radio("Chọn chế độ:", ["Chatbot", "Học phát âm"])
+mode = st.sidebar.radio("Chọn chế độ:", ["Chatbot", "Học phát âm", "Trò chuyện"])
 
 if mode == "Chatbot":
     # Lịch sử trò chuyện
@@ -121,3 +137,14 @@ elif mode == "Học phát âm":
             text_to_speech(word)
         else:
             st.warning("Vui lòng nhập từ cần phát âm!")
+
+elif mode == "Trò chuyện":
+    st.subheader("🗣️ Trò chuyện bằng giọng nói")
+    
+    if st.button("🎙️ Bắt đầu ghi âm"):
+        spoken_text = recognize_speech()
+        if spoken_text:
+            with st.spinner("Đang tạo câu trả lời..."):
+                response = ask_groq(spoken_text)
+            st.write(f"**🧑‍🏫 Trợ lý AI:** {response}")
+            text_to_speech(response)
