@@ -47,11 +47,30 @@ if mode == "Chatbot":
     # Gợi ý câu hỏi động
     if "suggestions" not in st.session_state:
         st.session_state.suggestions = [
-            "Làm thế nào để học từ vựng hiệu quả?",
-            "Cách phát âm chuẩn từ 'schedule'?",
-            "Sự khác biệt giữa 'say', 'tell', 'speak' và 'talk'?",
-            "Cấu trúc thì hiện tại hoàn thành?",
-            "Mẹo nhớ cách dùng giới từ trong ngôn ngữ này?"
+            # Từ vựng
+            "Làm thế nào để học từ vựng nhanh và nhớ lâu?",
+            "Từ nào thường bị nhầm lẫn trong tiếng Anh?",
+            "Những cụm từ (collocations) phổ biến trong giao tiếp?",
+
+            # Phát âm
+            "Làm sao để phát âm chuẩn giọng Anh - Mỹ?",
+            "Cách phát âm đúng các từ trong Anh - Anh và Anh - Mỹ?",
+            "Những âm dễ nhầm lẫn với người Việt (ví dụ: /θ/ và /s/)?",
+
+            # Ngữ pháp
+            "Cấu trúc thì hiện tại hoàn thành và cách dùng?",
+            "Phân biệt 'will' và 'going to' trong thì tương lai?",
+            "Cách sử dụng mạo từ 'a', 'an', 'the' đúng cách?",
+
+            # Giao tiếp thực tế
+            "Cách trả lời tự nhiên khi gặp người lạ?",
+            "Những câu hỏi thông dụng khi đi du lịch?",
+            "Cách nói lịch sự khi nhờ ai đó giúp đỡ?",
+
+            # Mẹo học tiếng Anh
+            "Làm thế nào để cải thiện kỹ năng nghe tiếng Anh?",
+            "Có phương pháp nào giúp luyện nói tự tin hơn?",
+            "Ứng dụng nào giúp học tiếng Anh hiệu quả?"
         ]
 
     st.sidebar.subheader("🎯 Gợi ý câu hỏi")
