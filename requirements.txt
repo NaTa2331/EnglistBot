@@ -3,4 +3,4 @@ groq
 gtts
 pyttsx3
 SpeechRecognition
-pyaudio
+pydub
