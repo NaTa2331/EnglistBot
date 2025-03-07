@@ -32,7 +32,7 @@ def ask_groq(query):
     response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
     return response.choices[0].message.content
 
-ddef text_to_speech(text):
+def text_to_speech(text):
     tts = gTTS(text, lang=tts_lang)
     tts.save("output.mp3")
     st.audio("output.mp3", format="audio/mp3")
