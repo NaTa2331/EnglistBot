@@ -1,10 +1,6 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
-import speech_recognition as sr
 from groq import Groq
 from gtts import gTTS
-import numpy as np
-import os
 
 # Đặt cấu hình trang (phải là lệnh đầu tiên)
 st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
