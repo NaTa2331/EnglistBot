@@ -31,35 +31,10 @@ def ask_groq(query):
     response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
     return response.choices[0].message.content
 
-def ask_groq(query):
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": query}
-    ]
-    response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
-    return response.choices[0].message.content
-
 def text_to_speech(text):
     tts = gTTS(text, lang=tts_lang)
     tts.save("output.mp3")
     st.audio("output.mp3", format="audio/mp3")
-
-# Nhận diện giọng nói
-def recognize_speech():
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        st.write("🎤 Đang lắng nghe... Hãy nói gì đó!")
-        audio = recognizer.listen(source)
-    try:
-        text = recognizer.recognize_google(audio, language="vi-VN")
-        st.success(f"Bạn đã nói: {text}")
-        return text
-    except sr.UnknownValueError:
-        st.warning("Không nhận diện được giọng nói, vui lòng thử lại!")
-        return ""
-    except sr.RequestError:
-        st.error("Lỗi kết nối với dịch vụ nhận diện giọng nói!")
-        return ""
 
 # UI Streamlit
 st.title("🗣️ Chatbot Dạy Ngôn Ngữ")
@@ -73,28 +48,65 @@ if mode == "Chatbot":
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # Nhập giọng nói
-    if st.button("🎙️ Nhập bằng giọng nói"):
-        query = recognize_speech()
-        if query:
+    # Gợi ý câu hỏi động
+    if "suggestions" not in st.session_state:
+        st.session_state.suggestions = [
+            "Làm thế nào để học từ vựng hiệu quả?",
+            "Cách phát âm chuẩn từ 'schedule'?",
+            "Sự khác biệt giữa 'say', 'tell', 'speak' và 'talk'?",
+            "Cấu trúc thì hiện tại hoàn thành?",
+            "Mẹo nhớ cách dùng giới từ trong ngôn ngữ này?"
+        ]
+
+    st.sidebar.subheader("🎯 Gợi ý câu hỏi")
+    for s in st.session_state.suggestions:
+        if st.sidebar.button(s):
             with st.spinner("Đang tạo câu trả lời..."):
-                answer = ask_groq(query)
-            st.session_state.chat_history.append({"question": query, "answer": answer})
-            st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
+                answer = ask_groq(s)
+            st.session_state.chat_history.append({"question": s, "answer": answer})
 
     # Hiển thị lịch sử trò chuyện
     st.subheader("📜 Lịch sử trò chuyện")
     for chat in st.session_state.chat_history:
         st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
         st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
-    
-    query = st.text_input("Nhập câu hỏi của bạn:")
-    if st.button("Gửi"):
+
+    def update_suggestions(last_question):
+        """Cập nhật gợi ý dựa trên câu hỏi gần nhất"""
+        if "phát âm" in last_question.lower():
+            st.session_state.suggestions = [
+                "Làm sao để phát âm chuẩn hơn?",
+                "Những lỗi phát âm phổ biến là gì?",
+                "Cách cải thiện ngữ điệu khi nói?",
+        ]
+        elif "ngữ pháp" in last_question.lower():
+            st.session_state.suggestions = [
+                "Các lỗi ngữ pháp phổ biến?",
+                "So sánh thì hiện tại đơn và hiện tại tiếp diễn?",
+                "Làm sao để nhớ cấu trúc câu dễ dàng hơn?",
+            ]
+        elif "từ vựng" in last_question.lower():
+            st.session_state.suggestions = [
+                "Cách học từ vựng hiệu quả?",
+                "Làm sao để nhớ từ vựng lâu?",
+                "Có mẹo nào để học từ vựng nhanh không?",
+            ]
+        else:
+            st.session_state.suggestions = [
+                "Làm thế nào để học ngôn ngữ hiệu quả?",
+                "Có phương pháp nào giúp nhớ nhanh hơn không?",
+                "Cách giao tiếp tự nhiên hơn?",
+        ]
+    def on_submit():
+        query = st.session_state.query_input.strip()
         if query:
             with st.spinner("Đang tạo câu trả lời..."):
                 answer = ask_groq(query)
             st.session_state.chat_history.append({"question": query, "answer": answer})
-            st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
+            update_suggestions(query)  # Cập nhật gợi ý theo câu hỏi mới nhất
+            st.session_state.query_input = ""
+
+    st.text_input("Nhập câu hỏi của bạn:", key="query_input", on_change=on_submit)
 
 elif mode == "Học phát âm":
     st.subheader("🔊 Học phát âm")
