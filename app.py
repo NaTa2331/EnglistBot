@@ -5,6 +5,7 @@ from groq import Groq
 from gtts import gTTS
 import numpy as np
 import os
+import queue
 
 # Đặt cấu hình trang (phải là lệnh đầu tiên)
 st.set_page_config(page_title="Chatbot Học Ngôn Ngữ", layout="wide")
@@ -31,83 +32,39 @@ def ask_groq(query):
     response = client.chat.completions.create(messages=messages, model="llama3-70b-8192")
     return response.choices[0].message.content
 
+# Hàm chuyển văn bản thành giọng nói
 def text_to_speech(text):
-    tts = gTTS(text, lang=tts_lang)
-    tts.save("output.mp3")
-    st.audio("output.mp3", format="audio/mp3")
+    tts = gTTS(text, lang="vi")
+    tts.save("response.mp3")
+    st.audio("response.mp3", format="audio/mp3")
 
 # UI Streamlit
 st.title("🗣️ Chatbot Dạy Ngôn Ngữ")
 st.write("Hỏi về từ vựng, ngữ pháp, cách phát âm hoặc giao tiếp thực tế!")
 
-# Tạo sidebar để chuyển đổi giữa các chế độ
-mode = st.sidebar.radio("Chọn chế độ:", ["Chatbot", "Học phát âm"])
+# Chế độ Chat hoặc Học phát âm
+mode = st.sidebar.radio("Chọn chế độ:", ["Chatbot", "Học phát âm", "Trò chuyện giọng nói"])
 
+# ===================== CHẾ ĐỘ CHATBOT =====================
 if mode == "Chatbot":
-    # Lịch sử trò chuyện
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # Gợi ý câu hỏi động
-    if "suggestions" not in st.session_state:
-        st.session_state.suggestions = [
-            "Làm thế nào để học từ vựng hiệu quả?",
-            "Cách phát âm chuẩn từ 'schedule'?",
-            "Sự khác biệt giữa 'say', 'tell', 'speak' và 'talk'?",
-            "Cấu trúc thì hiện tại hoàn thành?",
-            "Mẹo nhớ cách dùng giới từ trong ngôn ngữ này?"
-        ]
-
-    st.sidebar.subheader("🎯 Gợi ý câu hỏi")
-    for s in st.session_state.suggestions:
-        if st.sidebar.button(s):
-            with st.spinner("Đang tạo câu trả lời..."):
-                answer = ask_groq(s)
-            st.session_state.chat_history.append({"question": s, "answer": answer})
-
-    # Hiển thị lịch sử trò chuyện
     st.subheader("📜 Lịch sử trò chuyện")
     for chat in st.session_state.chat_history:
         st.write(f"**🧑‍🎓 Bạn:** {chat['question']}")
         st.write(f"**🧑‍🏫 Trợ lý AI:** {chat['answer']}")
 
-    def update_suggestions(last_question):
-        """Cập nhật gợi ý dựa trên câu hỏi gần nhất"""
-        if "phát âm" in last_question.lower():
-            st.session_state.suggestions = [
-                "Làm sao để phát âm chuẩn hơn?",
-                "Những lỗi phát âm phổ biến là gì?",
-                "Cách cải thiện ngữ điệu khi nói?",
-        ]
-        elif "ngữ pháp" in last_question.lower():
-            st.session_state.suggestions = [
-                "Các lỗi ngữ pháp phổ biến?",
-                "So sánh thì hiện tại đơn và hiện tại tiếp diễn?",
-                "Làm sao để nhớ cấu trúc câu dễ dàng hơn?",
-            ]
-        elif "từ vựng" in last_question.lower():
-            st.session_state.suggestions = [
-                "Cách học từ vựng hiệu quả?",
-                "Làm sao để nhớ từ vựng lâu?",
-                "Có mẹo nào để học từ vựng nhanh không?",
-            ]
-        else:
-            st.session_state.suggestions = [
-                "Làm thế nào để học ngôn ngữ hiệu quả?",
-                "Có phương pháp nào giúp nhớ nhanh hơn không?",
-                "Cách giao tiếp tự nhiên hơn?",
-        ]
-    def on_submit():
-        query = st.session_state.query_input.strip()
+    query = st.text_input("Nhập câu hỏi của bạn:")
+    if st.button("Gửi"):
         if query:
-            with st.spinner("Đang tạo câu trả lời..."):
+            with st.spinner("💭 Đang suy nghĩ..."):
                 answer = ask_groq(query)
             st.session_state.chat_history.append({"question": query, "answer": answer})
-            update_suggestions(query)  # Cập nhật gợi ý theo câu hỏi mới nhất
-            st.session_state.query_input = ""
+            st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
+            text_to_speech(answer)
 
-    st.text_input("Nhập câu hỏi của bạn:", key="query_input", on_change=on_submit)
-
+# ===================== CHẾ ĐỘ HỌC PHÁT ÂM =====================
 elif mode == "Học phát âm":
     st.subheader("🔊 Học phát âm")
     word = st.text_input("Nhập từ cần phát âm:")
@@ -124,3 +81,59 @@ elif mode == "Học phát âm":
             text_to_speech(word)
         else:
             st.warning("Vui lòng nhập từ cần phát âm!")
+
+# ===================== CHẾ ĐỘ TRÒ CHUYỆN GIỌNG NÓI =====================
+elif mode == "Trò chuyện giọng nói":
+    st.subheader("🎙️ Trò chuyện bằng giọng nói")
+
+    # Bộ nhận diện giọng nói
+    recognizer = sr.Recognizer()
+    audio_queue = queue.Queue()
+
+    def recognize_speech_from_stream(audio_data):
+        """Chuyển đổi giọng nói từ stream thành văn bản theo thời gian thực."""
+        try:
+            return recognizer.recognize_google(audio_data, language="vi-VN")
+        except sr.UnknownValueError:
+            return "Không nhận diện được, vui lòng thử lại."
+        except sr.RequestError:
+            return "Lỗi kết nối đến dịch vụ nhận diện giọng nói."
+
+    # Ghi âm và xử lý giọng nói
+    webrtc_ctx = webrtc_streamer(
+        key="speech-recognition",
+        mode=WebRtcMode.SENDRECV,
+        audio_receiver_size=1024,
+        media_stream_constraints={"video": False, "audio": True},
+    )
+
+    transcript_placeholder = st.empty()
+
+    if webrtc_ctx.audio_receiver:
+        st.write("🎤 **Đang lắng nghe...**")
+
+        try:
+            while True:
+                audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+                if not audio_frames:
+                    continue
+
+                # Chuyển đổi dữ liệu âm thanh
+                audio = np.concatenate([frame.to_ndarray() for frame in audio_frames], axis=0)
+                audio_data = sr.AudioData(audio.tobytes(), sample_rate=16000, sample_width=2)
+                recognized_text = recognize_speech_from_stream(audio_data)
+
+                transcript_placeholder.write(f"🗣️ **Bạn:** {recognized_text}")
+
+                # Nếu có văn bản hợp lệ, gửi đến chatbot
+                if recognized_text and recognized_text != "Không nhận diện được, vui lòng thử lại.":
+                    with st.spinner("💭 Đang suy nghĩ..."):
+                        answer = ask_groq(recognized_text)
+
+                    st.write(f"**🧑‍🏫 Trợ lý AI:** {answer}")
+
+                    # Đọc to câu trả lời
+                    text_to_speech(answer)
+
+        except Exception as e:
+            st.error(f"Lỗi ghi âm: {e}")
